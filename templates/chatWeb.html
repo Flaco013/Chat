@@ -1,0 +1,37 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peer-to-Peer Chat</title>
+</head>
+<body>
+    <h1>Peer-to-Peer Chat</h1>
+    <form id="chatForm">
+        <label for="message">Message:</label>
+        <input type="text" id="message" name="message" required>
+        <label for="destination">Destination Node:</label>
+        <input type="text" id="destination" name="destination" required>
+        <button type="button" onclick="sendMessage()">Send</button>
+    </form>
+
+    <script>
+        function sendMessage() {
+            const message = document.getElementById('message').value;
+            const destination = document.getElementById('destination').value;
+
+            fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `message=${encodeURIComponent(message)}&destination=${encodeURIComponent(destination)}`,
+            });
+
+            document.getElementById('message').value = '';
+        }
+    </script>
+</body>
+</html>
