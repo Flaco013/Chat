@@ -1,0 +1,55 @@
+<!-- nodes.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nodes</title>
+    <style>
+        .node-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .node {
+            width: 200px;
+            height: 100px;
+            background-color: #3498db;
+            border: 2px solid #2980b9;
+            border-radius: 10px;
+            margin: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+            font-size: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            text-decoration: none;
+        }
+        h1{
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome Thinkpad
+    </h1>
+    <div class="node-container">
+        <div class="node" id="node1">Node 1 Thinkpad</div>
+        <div class="node" id="node2">Node 2 Mac</div>
+        <div class="node" id="node3">Node 3 Uly</div>
+    </div>
+    <script>
+        document.querySelectorAll('.node').forEach(node => {
+            node.addEventListener('click', () => {
+                const nodeId = node.id;
+                window.location.href = `/message?node=${nodeId}`;
+            });
+        });
+    </script>
+</body>
+</html>
