@@ -11,6 +11,10 @@ from cassandra.auth import PlainTextAuthProvider
 # from cassandra.cluster import Cluster
 from datetime import datetime
 from flask import jsonify  
+from flask import redirect, url_for
+from flask import request
+from flask import session
+
 
 # cluster = Cluster()
 # cluster.connection_class = LibevConnection
@@ -18,6 +22,7 @@ from flask import jsonify
 import uuid
 
 app = Flask(__name__)
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
 class ChatApp:
     # RabbitMQ connection parameters
@@ -39,7 +44,7 @@ class ChatApp:
         self.receiver_thread.start() # Start the thread
 
                    # Cassandra connection parameters
-        cassandra_host = ['192.168.1.68', '192.168.1.70']  # Replace with IP addresses or hostnames
+        cassandra_host = ['192.168.1.68', '192.168.1.70','192.168.1.67']  # Replace with IP addresses or hostnames
         cassandra_port = 9042  # Cassandra default port
         cassandra_username = 'AllowAllAuthenticator'
         cassandra_password = 'AllowAllAuthenticator'
@@ -133,19 +138,60 @@ class ChatApp:
     """, (message_id, self.user_queue, self.partner_queue, message, timestamp))
 
 @app.route('/')
+def nodes():
+    return render_template('nodes.html')
 
-@app.route('/')
+# Route to handle node selection and redirect to messaging page
+@app.route('/message')
+def message():
+    node_id = request.args.get('node')
+    partner_queue = ''  # Default value
+    if node_id == 'node2':
+        partner_queue = 'Mac'
+    elif node_id == 'node3':
+        partner_queue = 'Uly'
+
+    if 'chat_app' not in session:
+        session['chat_app'] = {}    
+
+    session['chat_app']['partner_queue'] = partner_queue
+
+    return redirect(url_for('index', partner_queue=partner_queue))  # Pass partner_queue as a URL parameter
+
+
+@app.route('/index')
 def index():
     # Fetch messages from Cassandra
     messages = []
     
+    # Retrieve partner_queue from URL parameter or session
+    partner_queue = request.args.get('partner_queue')
+    if not partner_queue:
+        partner_queue = session.get('partner_queue')
+    
+    # If partner_queue is not set, redirect to node selection page
+    if not partner_queue:
+        return redirect(url_for('nodes'))
+
+    # Initialize chat_app_info dictionary with user_queue and partner_queue
+    chat_app_info = {
+        'user_queue': "Thinkpad",  # Set default user_queue value
+        'partner_queue': partner_queue
+    }
+    
+    # Instantiate ChatApp object using user_queue and partner_queue
+    chat_app = ChatApp(chat_app_info['user_queue'], chat_app_info['partner_queue'])
+
+    # Set chat_app_info in session
+    session['chat_app'] = chat_app_info
+    
     # Query for messages sent from the current user to the partner
     query_sent = "SELECT * FROM messages WHERE sender = %s AND receiver = %s ALLOW FILTERING"
-    rows_sent = chat_app.session.execute(query_sent, (chat_app.user_queue, chat_app.partner_queue))
+    rows_sent = chat_app.session.execute(query_sent, (chat_app_info['user_queue'], chat_app_info['partner_queue']))
     
     # Query for messages sent from the partner to the current user
     query_received = "SELECT * FROM messages WHERE sender = %s AND receiver = %s ALLOW FILTERING"
-    rows_received = chat_app.session.execute(query_received, (chat_app.partner_queue, chat_app.user_queue))
+    rows_received = chat_app.session.execute(query_received, (chat_app_info['partner_queue'], chat_app_info['user_queue']))
 
     # Add messages sent from the current user to the partner
     for row in rows_sent:
@@ -159,13 +205,14 @@ def index():
     messages.sort(key=lambda x: x['timestamp'])
 
     # Render template with retrieved messages and current user information
-    return render_template('index.html', messages=messages, current_user=chat_app.user_queue)
+    return render_template('index.html', messages=messages, current_user=chat_app_info['user_queue'])
 
-    
 @app.route('/send_message', methods=['POST'])
 def send_message_web():
     message = request.form['message']
-    chat_app.send_message(partner_queue, message)
+    chat_app_info = session['chat_app']
+    chat_app = ChatApp(chat_app_info['user_queue'], chat_app_info['partner_queue'])
+    chat_app.send_message(chat_app_info['partner_queue'], message)
     return '', 204
 
 @app.route('/load_chat_history', methods=['POST'])
@@ -174,6 +221,11 @@ def load_chat_history():
     sender = data.get('sender')
     receiver = data.get('receiver')
 
+    if 'chat_app' not in session:
+      partner_queue = request.args.get('partner_queue')
+      session['chat_app'] = ChatApp("Thinkpad", partner_queue)
+    
+    chat_app = session['chat_app']
     # Fetch chat history from Cassandra
     messages = []
 
@@ -205,15 +257,15 @@ def run_web_interface():
     app.run(host='0.0.0.0', port=5000, threaded=False)
 
 if __name__ == '__main__':
-    queue_name = input('Enter queue name: ')
-    partner_queue = input('Enter partner queue name: ')
+    # queue_name = input('Enter queue name: ')
+   # partner_queue = input('Enter partner queue name: ')
 
-    chat_app = ChatApp(queue_name, partner_queue)
-
+    #chat_app = ChatApp("Thinkpad", partner_queue)
+    #chat_app = ChatApp("a","b")
     web_thread = threading.Thread(target=run_web_interface)
     web_thread.start()
 
     while True:
         message = input('Enter message: ')
-        chat_app.send_message(partner_queue, message)
+        #chat_app.send_message(partner_queue, message)
 
