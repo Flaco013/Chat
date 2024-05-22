@@ -1,0 +1,127 @@
+# version: '3'
+
+# services:
+#   rabbitmq-node1:
+#     build: rabbitmq-node1
+#     container_name: rabbitmq-node1-Thinkpad
+#     ports:
+#       - "5672:5672"
+#       - "15672:15672"
+#     networks:
+#       - rabbitmq-net
+#     environment:
+#       - RABBITMQ_ERLANG_COOKIE=ba2c376c7ff0bbcb2f6f5b67e8d2e663
+#       - RABBITMQ_NODENAME=Santana-PC
+
+#   rabbitmq-node2:
+#     build: rabbitmq-node2
+#     container_name: rabbitmq-node2-MacBook
+#     ports:
+#       - "5673:5672"
+#       - "15673:15672"
+#     networks:
+#       - rabbitmq-net
+#     environment:
+#       - RABBITMQ_ERLANG_COOKIE=ba2c376c7ff0bbcb2f6f5b67e8d2e663
+#       - RABBITMQ_NODENAME=Alexiss-MacBook-Pro
+#     depends_on:
+#       - rabbitmq-node1
+
+#   rabbitmq-node3:
+#     build: rabbitmq-node3
+#     container_name: rabbitmq-node3
+#     ports:
+#       - "5674:5672"
+#       - "15674:15672"
+#     networks:
+#       - rabbitmq-net
+#     environment:
+#       - RABBITMQ_ERLANG_COOKIE=ba2c376c7ff0bbcb2f6f5b67e8d2e663
+#       - RABBITMQ_NODENAME=rabbit@node3
+#     depends_on:
+#       - rabbitmq-node1
+
+#   rabbitmq-node4:
+#     build: rabbitmq-node4
+#     container_name: rabbitmq-node4
+#     ports:
+#       - "5675:5672"
+#       - "15675:15672"
+#     networks:
+#       - rabbitmq-net
+#     environment:
+#       - RABBITMQ_ERLANG_COOKIE=ba2c376c7ff0bbcb2f6f5b67e8d2e663
+#       - RABBITMQ_NODENAME=rabbit@node4
+#     depends_on:
+#       - rabbitmq-node1
+
+# networks:
+#   rabbitmq-net:
+#     driver: bridge
+
+
+
+
+# version: '4.29' 
+ 
+# networks: 
+ 
+#   cassandra: 
+ 
+# services: 
+ 
+#   cassandra_thinkpad: 
+ 
+#     image: cassandra:4.1.4 
+ 
+#     container_name: cassandra_thinkpad 
+ 
+#     hostname: cassandra_thinkpad 
+ 
+#     networks: 
+ 
+#       - cassandra 
+ 
+#     ports: 
+ 
+#       - "9042:9042" 
+ 
+#     environment: &environment  
+ 
+#         CASSANDRA_SEEDS: "cassandra_thinkpad,cassandra_mac"   
+ 
+#         CASSANDRA_CLUSTER_NAME: MyTestCluster 
+ 
+#         CASSANDRA_DC: DC1 
+ 
+#         CASSANDRA_RACK: RACK1 
+ 
+#         CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch 
+ 
+#         CASSANDRA_NUM_TOKENS: 128 
+ 
+#   cassandra_mac: 
+ 
+#     image: cassandra:4.1.4
+ 
+#     container_name: cassandra_mac 
+ 
+#     hostname: cassandra_mac
+ 
+#     networks:
+ 
+#       - cassandra 
+ 
+#     ports: 
+ 
+#       - "9043:9042" 
+ 
+#     environment: *environment   
+ 
+#     depends_on: 
+ 
+#       cassandra_thinkpad:  
+ 
+#         condition: service_started 
+ 
+  

@@ -75,24 +75,17 @@
       .clear {
         clear: both;
       }
+
+      h1{
+        text-align: center;
+      }
     </style>
  </head>
 <body>
   <div class="container">
-    <h1>Chat Application</h1>
+    <h1>Chat Messages</h1>
 
-    <!-- Add input fields for sender and receiver queues -->
-    <div class="input-fields">
-      <label for="sender">Sender Queue:</label>
-      <input type="text" id="sender" name="sender" placeholder="Enter sender queue...">
-    </div>
-    <div class="input-fields">
-      <label for="receiver">Receiver Queue:</label>
-      <input type="text" id="receiver" name="receiver" placeholder="Enter receiver queue...">
-    </div>
-    <div class="input-fields">
-      <button type="button" onclick="loadChatHistory()">Load Chat History</button>
-    </div>
+  
 
     <div id="messages" class="message-box">
       <!-- Messages will be updated here -->
