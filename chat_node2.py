@@ -5,22 +5,6 @@ import uuid
 from datetime import datetime
 from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
-<<<<<<< HEAD
-=======
-# from cassandra.io.libevreactor import LibevConnection
-# from cassandra.cluster import Cluster
-from datetime import datetime
-from flask import jsonify  
-from flask import redirect, url_for
-from flask import request
-from flask import session
-
-
-# cluster = Cluster()
-# cluster.connection_class = LibevConnection
-# session = cluster.connect()
-import uuid
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -37,21 +21,11 @@ class ChatApp:
         self.partner_queue = partner_queue
         self.credentials = pika.PlainCredentials(ChatApp.RABBITMQ_USERNAME, ChatApp.RABBITMQ_PASSWORD)
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=ChatApp.RABBITMQ_HOST, port=ChatApp.RABBITMQ_PORT, credentials=self.credentials))
-<<<<<<< HEAD
         self.receiver_thread = threading.Thread(target=self.start_receiver, args=(user_queue, partner_queue))
         self.receiver_thread.start()
         
         cassandra_host = ['192.168.1.66', '192.168.1.70', '192.168.1.72']
         cassandra_port = 9042
-=======
-        self.receiver_thread = threading.Thread(target=self.start_receiver, args=(user_queue, )) # Create a thread for the receiver
-
-        self.receiver_thread.start() # Start the thread
-
-                   # Cassandra connection parameters
-        cassandra_host = ['192.168.1.68', '192.168.1.70','192.168.1.67']  # Replace with IP addresses or hostnames
-        cassandra_port = 9042  # Cassandra default port
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
         cassandra_username = 'AllowAllAuthenticator'
         cassandra_password = 'AllowAllAuthenticator'
         keyspace = 'chat_app'
@@ -127,16 +101,11 @@ class ChatApp:
 def nodes():
     return render_template('nodes.html')
 
-<<<<<<< HEAD
-=======
-# Route to handle node selection and redirect to messaging page
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
 @app.route('/message')
 def message():
     node_id = request.args.get('node')
     partner_queue = ''  # Default value
     if node_id == 'node2':
-<<<<<<< HEAD
         partner_queue = 'Alexis Mac'
     elif node_id == 'node3':
         partner_queue = 'Alvaro Asus'
@@ -151,58 +120,13 @@ def message():
     session['chat_app']['partner_queue'] = partner_queue
 
     return redirect(url_for('index', partner_queue=partner_queue))
-=======
-        partner_queue = 'Mac'
-    elif node_id == 'node3':
-        partner_queue = 'Uly'
-
-    if 'chat_app' not in session:
-        session['chat_app'] = {}    
-
-    session['chat_app']['partner_queue'] = partner_queue
-
-    return redirect(url_for('index', partner_queue=partner_queue))  # Pass partner_queue as a URL parameter
-
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
 
 @app.route('/index')
 def index():
     messages = []
-<<<<<<< HEAD
     partner_queue = request.args.get('partner_queue')
     if not partner_queue:
         partner_queue = session.get('partner_queue')
-=======
-    
-    # Retrieve partner_queue from URL parameter or session
-    partner_queue = request.args.get('partner_queue')
-    if not partner_queue:
-        partner_queue = session.get('partner_queue')
-    
-    # If partner_queue is not set, redirect to node selection page
-    if not partner_queue:
-        return redirect(url_for('nodes'))
-
-    # Initialize chat_app_info dictionary with user_queue and partner_queue
-    chat_app_info = {
-        'user_queue': "Thinkpad",  # Set default user_queue value
-        'partner_queue': partner_queue
-    }
-    
-    # Instantiate ChatApp object using user_queue and partner_queue
-    chat_app = ChatApp(chat_app_info['user_queue'], chat_app_info['partner_queue'])
-
-    # Set chat_app_info in session
-    session['chat_app'] = chat_app_info
-    
-    # Query for messages sent from the current user to the partner
-    query_sent = "SELECT * FROM messages WHERE sender = %s AND receiver = %s ALLOW FILTERING"
-    rows_sent = chat_app.session.execute(query_sent, (chat_app_info['user_queue'], chat_app_info['partner_queue']))
-    
-    # Query for messages sent from the partner to the current user
-    query_received = "SELECT * FROM messages WHERE sender = %s AND receiver = %s ALLOW FILTERING"
-    rows_received = chat_app.session.execute(query_received, (chat_app_info['partner_queue'], chat_app_info['user_queue']))
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
 
     if not partner_queue:
         return redirect(url_for('nodes'))
@@ -238,10 +162,6 @@ def index():
 
     messages.sort(key=lambda x: x['timestamp'])
 
-<<<<<<< HEAD
-=======
-    # Render template with retrieved messages and current user information
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
     return render_template('index.html', messages=messages, current_user=chat_app_info['user_queue'])
 
 @app.route('/send_message', methods=['POST'])
@@ -259,18 +179,10 @@ def load_chat_history():
     receiver = data.get('receiver')
 
     if 'chat_app' not in session:
-<<<<<<< HEAD
         partner_queue = request.args.get('partner_queue')
         session['chat_app'] = ChatApp("Thinkpad", partner_queue)
     
     chat_app = session['chat_app']
-=======
-      partner_queue = request.args.get('partner_queue')
-      session['chat_app'] = ChatApp("Thinkpad", partner_queue)
-    
-    chat_app = session['chat_app']
-    # Fetch chat history from Cassandra
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
     messages = []
 
     query_sent = "SELECT * FROM messages WHERE sender = %s AND receiver = %s ALLOW FILTERING"
@@ -293,22 +205,8 @@ def run_web_interface():
     app.run(host='0.0.0.0', port=5000, threaded=False)
 
 if __name__ == '__main__':
-<<<<<<< HEAD
-=======
-    # queue_name = input('Enter queue name: ')
-   # partner_queue = input('Enter partner queue name: ')
-
-    #chat_app = ChatApp("Thinkpad", partner_queue)
-    #chat_app = ChatApp("a","b")
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
     web_thread = threading.Thread(target=run_web_interface)
     web_thread.start()
 
     while True:
         message = input('Enter message: ')
-<<<<<<< HEAD
-=======
-        #chat_app.send_message(partner_queue, message)
-
-
->>>>>>> 30511e1e928ba7124e7292768ec99c9746687d7a
