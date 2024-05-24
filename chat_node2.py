@@ -9,6 +9,10 @@ from cassandra.auth import PlainTextAuthProvider
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
+# Hardcoded login credentials
+USERNAME = "admin"
+PASSWORD = "password"
+
 class ChatApp:
     # RabbitMQ connection parameters
     RABBITMQ_HOST = '192.168.1.70'
@@ -24,7 +28,7 @@ class ChatApp:
         self.receiver_thread = threading.Thread(target=self.start_receiver, args=(user_queue, partner_queue))
         self.receiver_thread.start()
         
-        cassandra_host = ['192.168.1.66', '192.168.1.70', '192.168.1.72']
+        cassandra_host = ['192.168.1.71', '192.168.1.70', '192.168.1.68','192.168.1.72']
         cassandra_port = 9042
         cassandra_username = 'AllowAllAuthenticator'
         cassandra_password = 'AllowAllAuthenticator'
@@ -98,11 +102,31 @@ class ChatApp:
         """, (message_id, self.user_queue, queue_name, message, timestamp))
 
 @app.route('/')
+def login():
+    return render_template('login.html')
+
+@app.route('/login', methods=['POST'])
+def login_post():
+    username = request.form['username']
+    password = request.form['password']
+
+    if username == USERNAME and password == PASSWORD:
+        session['logged_in'] = True
+        return redirect(url_for('nodes'))
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/nodes')
 def nodes():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
     return render_template('nodes.html')
 
 @app.route('/message')
 def message():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
     node_id = request.args.get('node')
     partner_queue = ''  # Default value
     if node_id == 'node2':
@@ -123,6 +147,9 @@ def message():
 
 @app.route('/index')
 def index():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
     messages = []
     partner_queue = request.args.get('partner_queue')
     if not partner_queue:
@@ -166,6 +193,9 @@ def index():
 
 @app.route('/send_message', methods=['POST'])
 def send_message_web():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
     message = request.form['message']
     chat_app_info = session['chat_app']
     chat_app = ChatApp(chat_app_info['user_queue'], chat_app_info['partner_queue'])
@@ -174,6 +204,9 @@ def send_message_web():
 
 @app.route('/load_chat_history', methods=['POST'])
 def load_chat_history():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
     data = request.json
     sender = data.get('sender')
     receiver = data.get('receiver')
