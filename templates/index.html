@@ -87,7 +87,7 @@
         <div id="messages" class="message-box">
             {% for message in messages %}
             <div class="message">
-                {% if message.is_sender %}
+                {% if message.sender == current_user %}
                 <div class="sender-message">
                     <span class="content">{{ message.message }}</span>
                 </div>

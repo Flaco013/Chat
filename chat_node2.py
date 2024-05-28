@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-import pika
-import threading
-import uuid
-from datetime import datetime
-from cassandra.cluster import Cluster
+from cassandra.cluster import Cluster, NoHostAvailable
 from cassandra.auth import PlainTextAuthProvider
+from cassandra.query import SimpleStatement
+import threading
+from datetime import datetime
+import pika
+import uuid
+from flask import Flask, render_template, request, redirect, url_for, session
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -33,12 +34,20 @@ class ChatApp:
         cassandra_username = 'AllowAllAuthenticator'
         cassandra_password = 'AllowAllAuthenticator'
         keyspace = 'chat_app'
-        
+
         auth_provider = PlainTextAuthProvider(username=cassandra_username, password=cassandra_password)
         self.cluster = Cluster(contact_points=cassandra_host, port=cassandra_port, auth_provider=auth_provider)
-        self.session = self.cluster.connect(keyspace)
-        
+        self.session = self.connect_to_cassandra(keyspace)
+
         self.create_cassandra_tables()
+
+    def connect_to_cassandra(self, keyspace):
+        while True:
+            try:
+                return self.cluster.connect(keyspace)
+            except NoHostAvailable:
+                print("No Cassandra host available, retrying...")
+                continue
 
     def create_cassandra_tables(self):
         self.session.execute("""
@@ -55,7 +64,6 @@ class ChatApp:
     def clear_message(self, channel, method, properties, body):
         print(f"Received message: {body.decode()}")
         channel.basic_ack(delivery_tag=method.delivery_tag)
-
     def start_receiver(self, user_queue, partner_queue):
         def callback(ch, method, properties, body):
             self.clear_message(ch, method, properties, body)
@@ -65,7 +73,7 @@ class ChatApp:
                 receiver = 'group_chat'
             else:
                 receiver = partner_queue
-            
+        
             message_id = uuid.uuid4()
             timestamp = datetime.now()
             self.session.execute("""
@@ -76,13 +84,10 @@ class ChatApp:
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=ChatApp.RABBITMQ_HOST, port=ChatApp.RABBITMQ_PORT, credentials=self.credentials))
         self.channel = connection.channel()
         self.channel.queue_declare(queue=user_queue, durable=True)
-        self.channel.queue_declare(queue='group_chat', durable=True)
-
+        print(f" [*] Waiting for messages in {user_queue}. To exit press CTRL+C")
         self.channel.basic_consume(queue=user_queue, on_message_callback=callback)
-        self.channel.basic_consume(queue='group_chat', on_message_callback=callback)
-
-        print(f" [*] Waiting for messages in {user_queue} and group_chat. To exit press CTRL+C")
         self.channel.start_consuming()
+
 
     def send_message(self, queue_name, message):
         channel = self.connection.channel()
@@ -100,7 +105,6 @@ class ChatApp:
             INSERT INTO messages (message_id, sender, receiver, message, timestamp)
             VALUES (%s, %s, %s, %s, %s)
         """, (message_id, self.user_queue, queue_name, message, timestamp))
-
 @app.route('/')
 def login():
     return render_template('login.html')
@@ -172,8 +176,9 @@ def index():
         rows = chat_app.session.execute(query)
 
         for row in rows:
-            is_sender = (row.sender == chat_app_info['user_queue'])
+            is_sender = (row.sender == chat_app_info['user_queue'])  # Check if the user is the sender
             messages.append({'sender': row.sender, 'receiver': row.receiver, 'message': row.message, 'timestamp': row.timestamp, 'is_sender': is_sender})
+
     else:
         query_sent = "SELECT * FROM messages WHERE sender = %s AND receiver = %s ALLOW FILTERING"
         rows_sent = chat_app.session.execute(query_sent, (chat_app_info['user_queue'], chat_app_info['partner_queue']))
@@ -191,6 +196,7 @@ def index():
 
     return render_template('index.html', messages=messages, current_user=chat_app_info['user_queue'])
 
+
 @app.route('/send_message', methods=['POST'])
 def send_message_web():
     if not session.get('logged_in'):
@@ -201,6 +207,11 @@ def send_message_web():
     chat_app = ChatApp(chat_app_info['user_queue'], chat_app_info['partner_queue'])
     chat_app.send_message(chat_app_info['partner_queue'], message)
     return '', 204
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 @app.route('/load_chat_history', methods=['POST'])
 def load_chat_history():
