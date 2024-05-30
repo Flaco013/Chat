@@ -78,12 +78,56 @@
             cursor: pointer;
             float: right;
         }
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 300px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .modal-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .modal-button.cancel {
+            background-color: #ff0000;
+        }
     </style>
 </head>
 <body>
+  
     <div class="container">
+      <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <p>Are you sure you want to logout?</p>
+            <button class="modal-button" onclick="confirmLogout()">Yes</button>
+            <button class="modal-button cancel" onclick="hideModal()">Cancel</button>
+        </div>
+    </div>
         <h1>Chat Messages</h1>
-        <button class="logout-button" onclick="location.href='/logout'">Logout</button>
+        <button class="logout-button" onclick="showModal()">Logout</button>
         <div id="messages" class="message-box">
             {% for message in messages %}
             <div class="message">
@@ -106,6 +150,18 @@
         </form>
     </div>
     <script>
+       function showModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+
+        function hideModal() {
+            document.getElementById('logoutModal').style.display = 'none';
+        }
+
+        function confirmLogout() {
+            window.location.href = '/logout';
+        }
+
         function loadChatHistory() {
             var sender = document.getElementById('sender').value;
             var receiver = document.getElementById('receiver').value;
