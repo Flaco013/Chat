@@ -28,7 +28,7 @@ class ChatApp:
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=ChatApp.RABBITMQ_HOST, port=ChatApp.RABBITMQ_PORT, credentials=self.credentials))
         self.receiver_thread = threading.Thread(target=self.start_receiver, args=(user_queue, partner_queue))
         self.receiver_thread.start()
-
+        
         cassandra_host = ['192.168.1.71', '192.168.1.70', '192.168.1.68','192.168.1.72']
         cassandra_port = 9042
         cassandra_username = 'AllowAllAuthenticator'
@@ -64,7 +64,6 @@ class ChatApp:
     def clear_message(self, channel, method, properties, body):
         print(f"Received message: {body.decode()}")
         channel.basic_ack(delivery_tag=method.delivery_tag)
-
     def start_receiver(self, user_queue, partner_queue):
         def callback(ch, method, properties, body):
             self.clear_message(ch, method, properties, body)
@@ -74,7 +73,7 @@ class ChatApp:
                 receiver = 'group_chat'
             else:
                 receiver = partner_queue
-
+        
             message_id = uuid.uuid4()
             timestamp = datetime.now()
             self.session.execute("""
@@ -88,6 +87,7 @@ class ChatApp:
         print(f" [*] Waiting for messages in {user_queue}. To exit press CTRL+C")
         self.channel.basic_consume(queue=user_queue, on_message_callback=callback)
         self.channel.start_consuming()
+
 
     def send_message(self, queue_name, message):
         channel = self.connection.channel()
@@ -105,15 +105,6 @@ class ChatApp:
             INSERT INTO messages (message_id, sender, receiver, message, timestamp)
             VALUES (%s, %s, %s, %s, %s)
         """, (message_id, self.user_queue, queue_name, message, timestamp))
-
-    def disconnect(self):
-        self.session.shutdown()
-        self.cluster.shutdown()
-
-    def reconnect(self, keyspace):
-        self.session = self.connect_to_cassandra(keyspace)
-        self.create_cassandra_tables()
-
 @app.route('/')
 def login():
     return render_template('login.html')
@@ -125,13 +116,6 @@ def login_post():
 
     if username == USERNAME and password == PASSWORD:
         session['logged_in'] = True
-
-        # Reconnect to the Cassandra cluster
-        if 'chat_app' in session:
-            chat_app_info = session['chat_app']
-            chat_app = ChatApp(chat_app_info['user_queue'], chat_app_info['partner_queue'])
-            chat_app.reconnect('chat_app')
-
         return redirect(url_for('nodes'))
     else:
         return redirect(url_for('login'))
@@ -226,15 +210,7 @@ def send_message_web():
 
 @app.route('/logout')
 def logout():
-    if 'chat_app' in session:
-        chat_app_info = session['chat_app']
-        chat_app = ChatApp(chat_app_info['user_queue'], chat_app_info['partner_queue'])
-        chat_app.disconnect()
-    
     session.pop('username', None)
-    session.pop('logged_in', None)
-    session.pop('chat_app', None)
-
     return redirect(url_for('login'))
 
 @app.route('/load_chat_history', methods=['POST'])
